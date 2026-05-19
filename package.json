@@ -17,12 +17,15 @@
     "deploy:staging": "pnpm run build && wrangler deploy --env staging",
     "deploy:dry-run": "pnpm run build && wrangler deploy --dry-run",
     "smoke": "node scripts/smoke.mjs",
+    "lint:secretlint": "secretlint --secretlintignore .gitignore \"**/*\"",
     "infra:pulumi:check": "pnpm --filter @mizchi/cloudflare-starterkit-pulumi run check",
     "infra:pulumi:preview": "pnpm --filter @mizchi/cloudflare-starterkit-pulumi run preview",
     "infra:pulumi:up": "pnpm --filter @mizchi/cloudflare-starterkit-pulumi run up"
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.50.0",
+    "@secretlint/secretlint-rule-preset-recommend": "^9.0.0",
+    "secretlint": "^9.0.0",
     "typescript": "^5.9.3",
     "wrangler": "^4.13.2"
   }

@@ -1,0 +1,124 @@
+/// pkfire task graph for the starter kit. Wraps the npm scripts so
+/// the typed task graph + content-addressed cache work the same way
+/// across local dev and CI. The pre-push hook gates secret leaks on
+/// the only moment they matter — when bytes leave your machine.
+///
+/// One-time setup (after `pnpm install` and `direnv allow`):
+///
+///   pkf hooks install
+///
+/// That writes `.git/hooks/pre-push` to call `pkf run pre-push`.
+/// Re-running it is idempotent. `.envrc` performs the same call so
+/// `cd` into a fresh clone is enough.
+amends "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.10.0#/Taskfile.pkl"
+
+/// `pnpm run build` already runs `db:verify` + `moon build` +
+/// `prepare-worker.mjs` + bundle check. Wrapping it as a pkf task
+/// gives you the action-key cache: re-running `pkf run build` with
+/// no source changes is a no-op.
+local build: Task = new {
+  name = "build"
+  description = "Build the Cloudflare Worker bundle"
+  cmd = "pnpm run build"
+  inputs {
+    "src/**/*.mbt"
+    "src/**/*.mjs"
+    "scripts/**/*.mjs"
+    "moon.mod.json"
+    "package.json"
+    "pnpm-lock.yaml"
+  }
+  outputs {
+    "dist/**/*"
+  }
+}
+
+local check: Task = new {
+  name = "check"
+  description = "moon type-check"
+  cmd = "pnpm run check"
+  inputs {
+    "src/**/*.mbt"
+    "moon.mod.json"
+  }
+  cache = false
+}
+
+local dbVerify: Task = new {
+  name = "db:verify"
+  description = "sqlc bind safety + placeholder-mix lint"
+  cmd = "pnpm run db:verify"
+  inputs {
+    "db/sqlite/query.sql"
+    "src/db/gen/**/*.mbt"
+    "scripts/patch-int64-binds.mjs"
+    "scripts/check-sql-placeholder-mix.mjs"
+  }
+  cache = false
+}
+
+local smoke: Task = new {
+  name = "smoke"
+  description = "Run HTTP smoke checks against SMOKE_BASE_URL"
+  cmd = "pnpm run smoke"
+  cache = false
+}
+
+/// Secret-leak gate. Scans the file set about to be pushed via the
+/// asymmetric `<upstream>..HEAD` diff (`@{push}` first, falling back
+/// to `@{u}`). On a brand-new branch with no upstream, scans every
+/// tracked file. See pkfire skill recipe 14.
+local secretlint: Task = new {
+  name = "lint:secretlint"
+  description = "Run secretlint against files in the diff about to be pushed"
+  // Pipe the NUL-separated git diff output straight into xargs. Do
+  // NOT route through a shell variable: bash 3.2 (default on macOS)
+  // strips NUL bytes from `$(...)` capture, so `$files` would end
+  // after the first filename and xargs would receive nothing —
+  // surfacing as `Error: Not found target files` from secretlint.
+  // `xargs -r` skips the secretlint invocation entirely when the diff
+  // is empty (-r is portable enough on GNU + BSD xargs).
+  cmd =
+    #"""
+    set -euo pipefail
+    upstream=$(git rev-parse --symbolic-full-name '@{push}' 2>/dev/null \
+            || git rev-parse --symbolic-full-name '@{u}' 2>/dev/null \
+            || true)
+    if [ -n "$upstream" ]; then
+      git diff --name-only --diff-filter=ACMR -z "${upstream}..HEAD" \
+        | xargs -0 -r pnpm exec secretlint --
+    else
+      git ls-files -z | xargs -0 -r pnpm exec secretlint --
+    fi
+    """#
+  cache = false
+  inputs {
+    ".secretlintrc.json"
+    ".secretlintignore"
+    "package.json"
+    "pnpm-lock.yaml"
+  }
+}
+
+/// Pre-push hook target. `pkf hooks install` wires
+/// `.git/hooks/pre-push` to this. Kept as a thin aggregator so more
+/// gates can be added without touching the hook installation.
+///
+/// Why pre-push, not pre-commit: secretlint is fast but not free.
+/// Running it on every commit (including amends and fixups) wastes
+/// attention. Push is the boundary with the outside world, which is
+/// the only moment a secret-leak gate really matters. Bypass for
+/// emergencies: `git push --no-verify`.
+local prePush: Task = new {
+  name = "pre-push"
+  description = "Pre-push gate: secret leak check"
+  cmd = "echo pre-push ok"
+  cache = false
+  // git passes `<remote> <url>` plus a stdin stream of refs being
+  // pushed. We don't read them, but the task must declare it accepts
+  // positional args so the hook invocation isn't rejected.
+  acceptsArgs = true
+  deps { secretlint }
+}
+
+tasks { build; check; dbVerify; smoke; secretlint; prePush }

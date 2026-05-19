@@ -39,6 +39,12 @@ jobs:
             ${{ runner.os }}-moon-
       - run: moon update
       - run: moon install
+      - name: secretlint
+        # Same scan the pre-push hook runs locally; CI catches anything
+        # that snuck through `--no-verify`. Scans every tracked file
+        # (full repo) rather than a diff, because the CI runner has no
+        # meaningful upstream concept on a fresh checkout.
+        run: pnpm run lint:secretlint
       - name: db:verify (placeholder mix + int64 bind)
         run: pnpm run db:verify
       - name: type-check

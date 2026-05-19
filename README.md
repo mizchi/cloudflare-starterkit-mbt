@@ -25,10 +25,13 @@ Distilled from a real-world worker; every piece exists because skipping it left 
 │   └── smoke.mjs                # post-deploy HTTP probes
 ├── infra/pulumi/                # Cloudflare D1 + R2 + Access stack
 ├── .github/workflows/
-│   ├── ci.yml                   # build + db:verify on PR
+│   ├── ci.yml                   # secretlint + build + db:verify on PR
 │   ├── deploy.yml               # reusable; deploy → smoke → rollback
 │   ├── cd-staging.yml           # push to main → staging
 │   └── cd-production.yml        # push to release → production
+├── Taskfile.pkl                 # pkfire tasks (build/check/smoke/pre-push)
+├── .envrc                       # direnv: PATH + `pkf hooks install`
+├── .secretlintrc.json           # secretlint preset-recommend
 └── wrangler.jsonc               # top-level=prod; env.staging block
 ```
 
@@ -43,7 +46,11 @@ cd my-app
 pnpm install
 moon install
 
-# 3. Provision Cloudflare resources via Pulumi
+# 3. Allow direnv + install git hooks (pkf wires pre-push secret scan)
+direnv allow
+pkf hooks install
+
+# 4. Provision Cloudflare resources via Pulumi
 cd infra/pulumi
 cp Pulumi.example.yaml Pulumi.dev.yaml          # edit account ID + emails
 pulumi stack init dev
@@ -51,13 +58,13 @@ pulumi up
 # Copy stack outputs into ../../wrangler.jsonc (database_id) and
 # ../../.env.cloudflare (Access AUD, team domain, service-token creds).
 
-# 4. Set up encrypted Cloudflare env
+# 5. Set up encrypted Cloudflare env
 cp ../../.env.cloudflare.example ../../.env.cloudflare
 pnpm exec dotenvx set CLOUDFLARE_API_TOKEN <token> -f ../../.env.cloudflare
 # ... repeat for all needed values
 pnpm exec dotenvx encrypt -f ../../.env.cloudflare
 
-# 5. Apply schema + ship
+# 6. Apply schema + ship
 cd ../..
 pnpm exec wrangler d1 execute cf-mbt-app --remote --file db/schema.sql
 pnpm run build
@@ -89,6 +96,8 @@ Replace `cf-mbt-app` everywhere with your own name. Files to touch:
 - **utels** for error tracking: lighter than Sentry, integrates as a single `fetch` boundary at the worker entrypoint (server-side only — browser SDK is out of scope here).
 - **OTLP** for traces / metrics / logs: any backend that speaks OTLP/HTTP/JSON works (Honeycomb, Grafana Cloud, Tempo).
 - **Auto-rollback on smoke failure**: the only reliable way to catch production-only bugs (BigInt hangs, missing env, region-only routing) without a human in the loop.
+- **secretlint at pre-push, not pre-commit**: scanning the about-to-be-pushed diff once is much cheaper than re-scanning every fixup commit. Push is the boundary with the outside world — secrets that don't leave the laptop are not yet a leak. `git push --no-verify` bypasses for emergencies. CI re-runs the same scan on every PR so the gate can't be silently disabled.
+- **pkfire** (`Taskfile.pkl`) for the task graph: typed deps, content-addressed cache, hook installation. The `pre-push` aggregator depends on `lint:secretlint`; `pkf hooks install` wires `.git/hooks/pre-push` to it. `.envrc` re-runs the install on every `cd` so a fresh clone is one `direnv allow` away.
 
 ## Docs
 
