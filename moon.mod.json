@@ -1,0 +1,17 @@
+{
+  "name": "mizchi/cloudflare-starterkit-mbt",
+  "version": "0.1.0",
+  "deps": {
+    "moonbitlang/async": "0.18.0",
+    "mizchi/cloudflare": "0.1.9",
+    "mizchi/js": "0.10.14",
+    "mizchi/mars": "0.3.10"
+  },
+  "source": "src",
+  "preferred-target": "js",
+  "readme": "README.md",
+  "repository": "https://github.com/mizchi/cloudflare-starterkit-mbt",
+  "license": "MIT",
+  "keywords": ["moonbit", "cloudflare", "workers", "d1", "sqlc", "starterkit"],
+  "description": "Starter kit for Cloudflare Workers in MoonBit with D1 + sqlc + Pulumi + CI/CD"
+}

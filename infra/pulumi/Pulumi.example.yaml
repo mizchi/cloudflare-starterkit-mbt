@@ -1,0 +1,14 @@
+config:
+  # Required: your Cloudflare account ID (Dashboard → right sidebar).
+  cloudflare-starterkit-mbt:cloudflareAccountId: REPLACE_ME
+  # Required: the URL pattern Access should gate. Production typically
+  # gates only /v1/* so anonymous routes stay public; staging usually
+  # gates the whole host so the test env isn't accidentally indexed.
+  cloudflare-starterkit-mbt:accessDomain: cf-mbt-app.YOUR-SUBDOMAIN.workers.dev/v1/*
+  # Required: GitHub-login emails that may access the gated paths.
+  cloudflare-starterkit-mbt:allowedEmails:
+    - you@example.com
+  # Optional: set environment=staging in the staging stack to apply
+  # the -staging resource suffix and default to provisionResources=true.
+  # cloudflare-starterkit-mbt:environment: production
+  # cloudflare-starterkit-mbt:provisionResources: "true"

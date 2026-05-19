@@ -1,0 +1,41 @@
+name: CD production
+
+# Auto-deploy push-to-release-branch to production. To ship the
+# current state of main, fast-forward `release` from `main`:
+#
+#   git push origin main:release
+#
+# Then this workflow fires the same deploy + smoke + auto-rollback
+# chain as cd-staging, but against production. The release branch is
+# the source of truth for what's running in production.
+#
+# To roll back: revert the release branch to a prior commit and push,
+# or run deploy.yml via workflow_dispatch with environment=production.
+
+on:
+  push:
+    branches:
+      - release
+    paths:
+      - "src/**"
+      - "db/**"
+      - "scripts/**"
+      - ".github/workflows/cd-production.yml"
+      - ".github/workflows/deploy.yml"
+      - ".env.cloudflare"
+      - "wrangler.jsonc"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "moon.mod.json"
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: production
+      message: "cd-production ${{ github.sha }}"
+    secrets:
+      DOTENV_PRIVATE_KEY_CLOUDFLARE: ${{ secrets.DOTENV_PRIVATE_KEY_CLOUDFLARE }}

@@ -1,0 +1,7 @@
+config:
+  cloudflare-starterkit-mbt:cloudflareAccountId: REPLACE_ME
+  cloudflare-starterkit-mbt:environment: staging
+  cloudflare-starterkit-mbt:provisionResources: "true"
+  cloudflare-starterkit-mbt:accessDomain: cf-mbt-app-staging.YOUR-SUBDOMAIN.workers.dev/*
+  cloudflare-starterkit-mbt:allowedEmails:
+    - you@example.com

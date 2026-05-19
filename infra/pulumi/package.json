@@ -1,0 +1,19 @@
+{
+  "name": "@mizchi/cloudflare-starterkit-pulumi",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "preview": "pulumi preview",
+    "up": "pulumi up",
+    "outputs": "pulumi stack output --json"
+  },
+  "dependencies": {
+    "@pulumi/cloudflare": "^6.14.0",
+    "@pulumi/pulumi": "^3.165.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,41 @@
+name: CD staging
+
+# Auto-deploy every merge to main to staging. The reusable deploy.yml
+# applies migrations, builds, deploys, runs smoke, and auto-rolls-back
+# on smoke failure.
+#
+# Path filter: only run when changes can affect the worker. Docs-only
+# commits skip the deploy cycle.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "db/**"
+      - "scripts/**"
+      - ".github/workflows/cd-staging.yml"
+      - ".github/workflows/deploy.yml"
+      - ".env.cloudflare"
+      - "wrangler.jsonc"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "moon.mod.json"
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: staging
+      # Avoid passing `github.event.head_commit.message` here — commit
+      # bodies contain newlines and YAML-interpolating them into a
+      # shell string is unsafe (one repro leaked the words `--yes` and
+      # `wrangler` from a commit body into a shell command). The sha
+      # is enough; the deploy step adds a short sha already.
+      message: "cd-staging ${{ github.sha }}"
+    secrets:
+      DOTENV_PRIVATE_KEY_CLOUDFLARE: ${{ secrets.DOTENV_PRIVATE_KEY_CLOUDFLARE }}

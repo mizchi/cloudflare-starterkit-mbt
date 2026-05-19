@@ -1,0 +1,4 @@
+name: cloudflare-starterkit-mbt
+runtime: nodejs
+description: Cloudflare resources (D1, R2, Access) for the starter kit
+main: index.ts

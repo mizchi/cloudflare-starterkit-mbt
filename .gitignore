@@ -1,0 +1,29 @@
+node_modules/
+_build/
+dist/
+target/
+.wrangler/
+.mooncakes/
+.moon/
+*.tsbuildinfo
+
+# dotenvx encrypted env stays in repo; keys do not.
+.env.keys
+.env.*.keys
+
+# Pulumi local state
+infra/pulumi/Pulumi.*.yaml
+!infra/pulumi/Pulumi.yaml
+!infra/pulumi/Pulumi.example.yaml
+!infra/pulumi/Pulumi.staging.example.yaml
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
