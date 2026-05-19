@@ -32,7 +32,25 @@ permissions:
   contents: read
 
 jobs:
+  precheck:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - id: check
+        env:
+          KEY: ${{ secrets.DOTENV_PRIVATE_KEY_CLOUDFLARE }}
+        run: |
+          if [ -n "$KEY" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::DOTENV_PRIVATE_KEY_CLOUDFLARE is not set on this repo — skipping deploy. Configure the secret (see docs/cd-overview.md) to enable production CD."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
   deploy:
+    needs: precheck
+    if: needs.precheck.outputs.ready == 'true'
     uses: ./.github/workflows/deploy.yml
     with:
       environment: production
