@@ -1,7 +1,8 @@
 // Minimal Cloudflare Worker fetch handler in MoonBit.
 //
 // The generated JS calls `globalThis.__appServerFetch(request, env, ctx)`
-// from `dist/worker.mjs` (see scripts/prepare-worker.ts). This file
+// from src/worker.ts (wrangler bundles src/worker.ts + this MoonBit
+// output into a single dist/worker.js at deploy time). This file
 // registers that global at module-init time. Add more routes via
 // `@mars.Server::<method>(...)` in `build_app()`.
 

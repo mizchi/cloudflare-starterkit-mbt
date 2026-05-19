@@ -18,10 +18,9 @@ Distilled from a real-world worker; every piece exists because skipping it left 
 │   ├── sqlite/query.sql         # sqlc queries (named params only)
 │   └── migrations/              # `wrangler d1 migrations apply`
 ├── scripts/
-│   ├── prepare-worker.ts       # bundles moon JS + emits dist/worker.mjs
 │   ├── patch-int64-binds.ts    # wraps Int64 binds with int64_bind_safe
 │   ├── check-sql-placeholder-mix.ts
-│   ├── check-worker-bundle.ts
+│   ├── check-worker-bundle.ts  # sanity check on dist/worker.js
 │   └── smoke.ts                # post-deploy HTTP probes
 ├── infra/pulumi/                # Cloudflare D1 + R2 + Access stack
 ├── .github/workflows/
@@ -80,7 +79,7 @@ Replace `cf-mbt-app` everywhere with your own name. Files to touch:
 - `package.json` (`name`, `description`)
 - `moon.mod.json` (`name`, `description`, `repository`)
 - `wrangler.jsonc` (`name`, all D1/R2 binding names, `vars.OTEL_SERVICE_NAME`, `vars.UTELS_PROJECT_ID`)
-- `scripts/prepare-worker.ts` (moonOutput filename, app-core.js filename, `__appServerFetch` global if you renamed it)
+- `src/worker.ts` (moon-output import path uses the moon package name; rename in lockstep with `moon.mod.json`)
 - `src/telemetry-runtime.ts` (`DEFAULT_SERVICE_NAME`, `SCOPE.name`)
 - `infra/pulumi/*` (resource names, the `cf-mbt-app` strings, Pulumi project name)
 - `.github/workflows/deploy.yml` (the `cf-mbt-app` strings in env / smoke base / migrations DB list)

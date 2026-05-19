@@ -9,7 +9,7 @@
 	// hand). See infra/pulumi/index.ts.
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "cf-mbt-app",
-	"main": "dist/worker.mjs",
+	"main": "src/worker.ts",
 	"compatibility_date": "2026-04-30",
 	"observability": {
 		"enabled": true

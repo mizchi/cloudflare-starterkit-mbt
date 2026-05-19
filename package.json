@@ -10,8 +10,7 @@
     "onlyBuiltDependencies": ["esbuild", "protobufjs", "sharp", "workerd"]
   },
   "scripts": {
-    "build": "pnpm run clean && node scripts/patch-int64-binds.ts --verify && node scripts/check-sql-placeholder-mix.ts && pnpm run build:ts && moon build --target js --release && node scripts/prepare-worker.ts && node scripts/check-worker-bundle.ts dist/app-core.js",
-    "build:ts": "tsc",
+    "build": "pnpm run clean && node scripts/patch-int64-binds.ts --verify && node scripts/check-sql-placeholder-mix.ts && moon build --target js --release && wrangler deploy --dry-run --outdir=dist && node scripts/check-worker-bundle.ts dist/worker.js",
     "clean": "rm -rf dist",
     "check": "moon check --target js && tsc --noEmit",
     "db:compile": "sqlc compile",

@@ -1,15 +1,17 @@
-// Post-build sanity check for the bundled Worker core.
+// Post-build sanity check for the bundled Worker.
 //
-// `moon build --target js --release` followed by `prepare-worker.ts`
-// can produce a file with subtle corruption: missing rewrite targets
-// (silent String#replace no-op), stray \x1f control bytes from the
-// wasm host, or the wrong package name if moon.mod.json was renamed
-// without updating prepare-worker.ts. None of these surface as a
-// crash at deploy time — they surface as a hung worker on first
-// request, which is hard to debug after the fact.
+// `moon build --target js --release` + `wrangler deploy --dry-run` can
+// produce a bundle with subtle corruption: stray \x1f control bytes
+// from the wasm host that emits the MoonBit JS (sqlc-gen-moonbit #17),
+// a far-too-small file (moon produced an empty stub because of a
+// transitive failure), or a missing marker that the worker entry
+// relies on. None of these surface as a crash at deploy time — they
+// surface as a hung worker on first request, which is hard to debug
+// after the fact.
 //
-// This script enforces a minimum set of invariants. Extend it when
-// you add new rewrite steps in prepare-worker.ts.
+// This script enforces a minimum set of invariants. Extend
+// REQUIRED_MARKERS when you add code paths that must appear in the
+// bundle (e.g. a scheduled cron handler).
 
 import { readFile, stat } from "node:fs/promises";
 
@@ -56,20 +58,19 @@ if (usPositions.length > 0) {
   process.exit(1);
 }
 
-// Each MoonBit codegen path that prepare-worker.ts rewrites should
-// leave a distinctive marker behind so a silently-skipped rewrite is
-// caught here. The starter ships without rewrites; add an entry per
-// rewrite as you introduce them. Pattern:
+// Each entry must appear somewhere in the bundle. Add one per code
+// path you cannot afford to silently disappear (e.g. when adding a
+// scheduled cron handler). Example pattern:
 //   const REQUIRED_MARKERS = [
 //     { needle: "globalThis.__appCronTick", reason: "scheduled cron forwarder" },
 //   ];
-const REQUIRED_MARKERS = [];
+const REQUIRED_MARKERS: Array<{ needle: string; reason: string }> = [];
 for (const marker of REQUIRED_MARKERS) {
   if (!content.includes(marker.needle)) {
     console.error(
       `worker bundle check: missing marker "${marker.needle}" (${marker.reason}) in ${target}. ` +
-        `Either prepare-worker.ts's rewrite step failed silently, or the upstream moon ` +
-        `output changed shape. Update prepare-worker.ts and this checklist together.`,
+        `Either the upstream moon output changed shape or src/worker.ts dropped its import. ` +
+        `Investigate before re-running the build.`,
     );
     process.exit(1);
   }

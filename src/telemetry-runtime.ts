@@ -248,7 +248,7 @@ import {
   detectDbTable,
   truncateStatement,
   wrapD1Bindings,
-} from "./telemetry/d1-wrap.js";
+} from "./telemetry/d1-wrap.ts";
 
 function d1QuerySpan(spanCtx, query) {
   return _d1QuerySpan(spanCtx, query, { toKeyValues, randomHex });
