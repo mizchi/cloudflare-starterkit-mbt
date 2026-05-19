@@ -8,3 +8,16 @@ packages:
 # payoff. Forks can re-enable per their own policy.
 minimumReleaseAge: 0
 
+# pnpm 10 requires opt-in approval for post-install scripts. Without
+# this list, `pnpm install --frozen-lockfile` exits with
+# ERR_PNPM_IGNORED_BUILDS in CI. These four are all reputable framework
+# bits we want to actually run their native install steps:
+#   - esbuild / sharp / protobufjs: native binaries for the JS toolchain
+#   - workerd: Cloudflare Workers' actual runtime (used by miniflare /
+#     wrangler dev). Skipping its build leaves wrangler dev broken.
+onlyBuiltDependencies:
+  - esbuild
+  - protobufjs
+  - sharp
+  - workerd
+
