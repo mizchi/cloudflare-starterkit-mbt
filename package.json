@@ -28,8 +28,5 @@
     "secretlint": "^9.0.0",
     "typescript": "^5.9.3",
     "wrangler": "^4.13.2"
-  },
-  "pnpm": {
-    "minimumReleaseAge": 0
   }
 }

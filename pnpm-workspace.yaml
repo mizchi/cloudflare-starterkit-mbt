@@ -1,3 +1,10 @@
 packages:
   - "."
   - "infra/pulumi"
+
+# Disable pnpm 10's supply-chain 24h release-age default. For a starter
+# kit whose dev deps are framework tools (wrangler, miniflare, …) the
+# policy creates a recurring CI failure window with no real security
+# payoff. Forks can re-enable per their own policy.
+minimumReleaseAge: 0
+
