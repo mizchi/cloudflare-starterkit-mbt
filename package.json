@@ -5,6 +5,10 @@
   "type": "module",
   "description": "Starter kit for Cloudflare Workers in MoonBit with D1 + sqlc + Pulumi + CI/CD",
   "license": "MIT",
+  "packageManager": "pnpm@10.33.0",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "protobufjs", "sharp", "workerd"]
+  },
   "scripts": {
     "build": "node scripts/patch-int64-binds.mjs --verify && node scripts/check-sql-placeholder-mix.mjs && moon build --target js --release && node scripts/prepare-worker.mjs && node scripts/check-worker-bundle.mjs dist/app-core.js",
     "check": "moon check --target js",
