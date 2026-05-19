@@ -152,7 +152,7 @@ if (mode === "verify") {
   if (!helperPresent) {
     problems.push(
       "int64_bind_safe helper extern is missing from sqlc_queries.mbt " +
-        "(should be inserted by `node scripts/patch-int64-binds.mjs`).",
+        "(should be inserted by `node scripts/patch-int64-binds.ts`).",
     );
   }
   if (problems.length > 0) {
@@ -189,7 +189,7 @@ if (edits === 0 && helperPresent) {
 // the parent.
 const helperBlock =
   `///|\n` +
-  `/// Patched in by scripts/patch-int64-binds.mjs after every \`sqlc generate\`.\n` +
+  `/// Patched in by scripts/patch-int64-binds.ts after every \`sqlc generate\`.\n` +
   `/// Wraps Int64 values as JS Number before passing them to D1.bind() so\n` +
   `/// the BigInt → bind hang (docs/regression/worker-deploy.md §Int64-bind hang) doesn't recur. See ../db_bind_safe.mbt\n` +
   `/// for the long-form note and the upstream sqlc-gen-moonbit issue.\n` +

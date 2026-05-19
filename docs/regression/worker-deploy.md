@@ -8,7 +8,7 @@ Each entry below cost a debugging session at least once. Read before spending an
 
 **Root cause**: D1's `.bind()` does not handle JS `BigInt`. Passing a raw BigInt makes `.run()` / `.all()` never resolve. sqlc-gen-moonbit emits `Int64` fields as BigInt at the bind boundary.
 
-**Fix**: every `@core.any(params.<Int64>)` in `src/db/gen/sqlc_queries.mbt` must be wrapped with `int64_bind_safe(...)`. `scripts/patch-int64-binds.mjs` does this post-`sqlc generate`. `--verify` is a CI gate (`pnpm run db:verify`).
+**Fix**: every `@core.any(params.<Int64>)` in `src/db/gen/sqlc_queries.mbt` must be wrapped with `int64_bind_safe(...)`. `scripts/patch-int64-binds.ts` does this post-`sqlc generate`. `--verify` is a CI gate (`pnpm run db:verify`).
 
 **Pitfall in the patch script itself**: an earlier version used `\{[^}]+\}` as the function-body matcher in a single regex. That truncates whenever the bind list contains an Optional field encoded as `(match params.x { Some(v) => @core.any(v); None => @core.null() })` — every bind after the inner `}` was silently skipped. The current script splits on `^pub async fn ` boundaries instead so the body match cannot truncate. Also wraps the `Some(v) => @core.any(v)` arm for `Int64?` fields — the unwrapped `v` is still BigInt.
 
@@ -18,7 +18,7 @@ Each entry below cost a debugging session at least once. Read before spending an
 
 **Root cause**: sqlc-gen-moonbit compiles each `sqlc.arg('name')` to a fixed `?N` and leaves anonymous `?` for SQLite to auto-number (`max used + 1`). When both styles co-exist, a trailing anonymous `?` can land on a number beyond the bind-array length. D1 returns a parameter count mismatch which surfaces as a worker exception.
 
-**Fix**: pick one style per statement. `scripts/check-sql-placeholder-mix.mjs` enforces it on `pnpm run db:verify`. The starter ships using `sqlc.arg(...)` everywhere.
+**Fix**: pick one style per statement. `scripts/check-sql-placeholder-mix.ts` enforces it on `pnpm run db:verify`. The starter ships using `sqlc.arg(...)` everywhere.
 
 ## 3. sqlc-gen-moonbit codegen bit-flips
 

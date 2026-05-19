@@ -1,0 +1,33 @@
+{
+  // Type-only TypeScript for the worker source. The compiler outputs
+  // ESM JS into dist/ — workerd doesn't understand TS at runtime, so
+  // type-stripping has to happen at build time. Scripts under
+  // `scripts/` are run directly by Node 24, which strips types on
+  // load (experimental-strip-types is on by default since v22.6),
+  // so they're not part of this emit pass.
+  //
+  // strict is OFF by default for the starter — the worker runtime
+  // code in src/telemetry-runtime.ts touches a lot of dynamic
+  // Cloudflare bindings whose strict-mode types would just push
+  // `as unknown as Foo` casts into every line. Turn it on
+  // incrementally as your handler code grows. The d1-wrap module
+  // ships with proper types as a reference.
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": false,
+    "sourceMap": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["@cloudflare/workers-types", "node"]
+  },
+  "include": ["src/**/*.ts"]
+}

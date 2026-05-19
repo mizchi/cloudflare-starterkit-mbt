@@ -10,19 +10,19 @@ Distilled from a real-world worker; every piece exists because skipping it left 
 .
 ├── src/
 │   ├── main.mbt                 # minimal mars-based worker handler
-│   ├── telemetry-runtime.mjs    # OTLP + utels error tracking wrappers
-│   ├── telemetry/d1-wrap.mjs    # D1 Proxy: slow-query log + per-query spans
+│   ├── telemetry-runtime.ts    # OTLP + utels error tracking wrappers
+│   ├── telemetry/d1-wrap.ts    # D1 Proxy: slow-query log + per-query spans
 │   └── db/gen/                  # sqlc output (generated; do not edit)
 ├── db/
 │   ├── schema.sql               # canonical schema
 │   ├── sqlite/query.sql         # sqlc queries (named params only)
 │   └── migrations/              # `wrangler d1 migrations apply`
 ├── scripts/
-│   ├── prepare-worker.mjs       # bundles moon JS + emits dist/worker.mjs
-│   ├── patch-int64-binds.mjs    # wraps Int64 binds with int64_bind_safe
-│   ├── check-sql-placeholder-mix.mjs
-│   ├── check-worker-bundle.mjs
-│   └── smoke.mjs                # post-deploy HTTP probes
+│   ├── prepare-worker.ts       # bundles moon JS + emits dist/worker.mjs
+│   ├── patch-int64-binds.ts    # wraps Int64 binds with int64_bind_safe
+│   ├── check-sql-placeholder-mix.ts
+│   ├── check-worker-bundle.ts
+│   └── smoke.ts                # post-deploy HTTP probes
 ├── infra/pulumi/                # Cloudflare D1 + R2 + Access stack
 ├── .github/workflows/
 │   ├── ci.yml                   # secretlint + build + db:verify on PR
@@ -80,8 +80,8 @@ Replace `cf-mbt-app` everywhere with your own name. Files to touch:
 - `package.json` (`name`, `description`)
 - `moon.mod.json` (`name`, `description`, `repository`)
 - `wrangler.jsonc` (`name`, all D1/R2 binding names, `vars.OTEL_SERVICE_NAME`, `vars.UTELS_PROJECT_ID`)
-- `scripts/prepare-worker.mjs` (moonOutput filename, app-core.js filename, `__appServerFetch` global if you renamed it)
-- `src/telemetry-runtime.mjs` (`DEFAULT_SERVICE_NAME`, `SCOPE.name`)
+- `scripts/prepare-worker.ts` (moonOutput filename, app-core.js filename, `__appServerFetch` global if you renamed it)
+- `src/telemetry-runtime.ts` (`DEFAULT_SERVICE_NAME`, `SCOPE.name`)
 - `infra/pulumi/*` (resource names, the `cf-mbt-app` strings, Pulumi project name)
 - `.github/workflows/deploy.yml` (the `cf-mbt-app` strings in env / smoke base / migrations DB list)
 
@@ -90,7 +90,7 @@ Replace `cf-mbt-app` everywhere with your own name. Files to touch:
 ## Why these specific choices
 
 - **MoonBit + mars** for the worker: typed handlers, async/await without callback hell, generated JS is small.
-- **sqlc-gen-moonbit** for D1 access: typed query bindings; never write raw `.bind([...])` in handler code. Every Int64 column needs the `int64_bind_safe` wrapper because D1's `.bind()` hangs on JS BigInt — `scripts/patch-int64-binds.mjs` enforces this, and `--verify` is a CI gate.
+- **sqlc-gen-moonbit** for D1 access: typed query bindings; never write raw `.bind([...])` in handler code. Every Int64 column needs the `int64_bind_safe` wrapper because D1's `.bind()` hangs on JS BigInt — `scripts/patch-int64-binds.ts` enforces this, and `--verify` is a CI gate.
 - **dotenvx** for `.env.cloudflare`: one repo secret rotates every Cloudflare credential. `wrangler` reads them through `dotenvx run -f .env.cloudflare -- wrangler …`.
 - **Pulumi** for D1 / R2 / Access: declarative + state-managed, but `wrangler vectorize create` stays manual because the cloudflare provider (v6.x) lacks `VectorizeIndex`.
 - **utels** for error tracking: lighter than Sentry, integrates as a single `fetch` boundary at the worker entrypoint (server-side only — browser SDK is out of scope here).

@@ -10,13 +10,15 @@
 //     calls the `globalThis.__appServerFetch` the core registers (see
 //     src/main.mbt).
 //   - Telemetry + error tracking live as JS-side wrappers around the
-//     core handler. Keeping them in `src/telemetry-runtime.mjs` lets
-//     them stay readable and unit-testable from Node.
+//     core handler. The source is TypeScript under `src/`, transpiled
+//     by `tsc` into `dist/telemetry-runtime.js` + `dist/telemetry/*.js`
+//     before this script runs. We do NOT copy the .ts sources directly
+//     — workerd cannot strip types at runtime.
 //
 // Adjust the moon-output path and the worker.mjs body if you rename
 // the moon package or want to add more wrappers.
 
-import { copyFile, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -24,31 +26,29 @@ const root = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(root, "..");
 const distDir = join(projectRoot, "dist");
 
-// `moon build --target js --release` puts the bundled JS here. The
-// filename matches the package name in moon.mod.json. Rename if you
-// change the moon package name.
 const moonOutput = join(
   projectRoot,
   "_build/js/release/build/cloudflare-starterkit-mbt.js",
 );
 
-const telemetryRuntime = join(projectRoot, "src/telemetry-runtime.mjs");
-const telemetryDir = join(projectRoot, "src/telemetry");
-
 await mkdir(distDir, { recursive: true });
 const moonCore = await readFile(moonOutput, "utf8");
-
-// Output filename for the bundled core. `wrangler` does not import it
-// directly — the worker entrypoint below does.
 await writeFile(join(distDir, "app-core.js"), moonCore);
 
-// Copy the JS-side telemetry runtime (server-side error tracking +
-// OTLP push + D1 query wrap).
-await copyFile(telemetryRuntime, join(distDir, "telemetry-runtime.mjs"));
-await mkdir(join(distDir, "telemetry"), { recursive: true });
-for (const name of await readdir(telemetryDir)) {
-  if (!name.endsWith(".mjs")) continue;
-  await copyFile(join(telemetryDir, name), join(distDir, "telemetry", name));
+// Sanity check: tsc should have produced dist/telemetry-runtime.js +
+// dist/telemetry/d1-wrap.js by the time we get here. Fail loudly if
+// not, because the worker entrypoint below will import them.
+for (const required of ["telemetry-runtime.js", "telemetry/d1-wrap.js"]) {
+  try {
+    const info = await stat(join(distDir, required));
+    if (!info.isFile()) throw new Error("not a file");
+  } catch (error) {
+    console.error(
+      `prepare-worker: missing dist/${required} — did you run \`pnpm run build:ts\` first? ` +
+        `(error: ${(error as Error).message})`,
+    );
+    process.exit(1);
+  }
 }
 
 // Worker entrypoint. `wrangler.jsonc` has `"main": "dist/worker.mjs"`.
@@ -58,7 +58,7 @@ for (const name of await readdir(telemetryDir)) {
 await writeFile(
   join(distDir, "worker.mjs"),
   `import "./app-core.js";
-import { withTelemetry, withUtelsErrorTracking } from "./telemetry-runtime.mjs";
+import { withTelemetry, withUtelsErrorTracking } from "./telemetry-runtime.js";
 
 const coreHandler = {
   fetch(request, env, ctx) {

@@ -215,7 +215,7 @@ function tracePayload(
   error,
   childSpans = [],
 ) {
-  const span = {
+  const span: Record<string, unknown> = {
     traceId: ctx.traceId,
     spanId: ctx.spanId,
     ...(ctx.parentSpanId ? { parentSpanId: ctx.parentSpanId } : {}),
@@ -248,7 +248,7 @@ import {
   detectDbTable,
   truncateStatement,
   wrapD1Bindings,
-} from "./telemetry/d1-wrap.mjs";
+} from "./telemetry/d1-wrap.js";
 
 function d1QuerySpan(spanCtx, query) {
   return _d1QuerySpan(spanCtx, query, { toKeyValues, randomHex });
